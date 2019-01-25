@@ -1,8 +1,10 @@
 import {vec3} from 'gl-matrix';
+import {vec4} from 'gl-matrix';
 import * as Stats from 'stats-js';
 import * as DAT from 'dat-gui';
 import Icosphere from './geometry/Icosphere';
 import Square from './geometry/Square';
+import Cube from './geometry/Cube';
 import OpenGLRenderer from './rendering/gl/OpenGLRenderer';
 import Camera from './Camera';
 import {setGL} from './globals';
@@ -13,17 +15,28 @@ import ShaderProgram, {Shader} from './rendering/gl/ShaderProgram';
 const controls = {
   tesselations: 5,
   'Load Scene': loadScene, // A function pointer, essentially
+  'Color': [255, 0, 0, 1.0],
+  'Switch Shader': switchShader
 };
 
 let icosphere: Icosphere;
 let square: Square;
+let cube: Cube;
 let prevTesselations: number = 5;
+let prevColor: number[] = [256, 0, 0, 1.0]
+let useCustom: boolean = false
 
 function loadScene() {
-  icosphere = new Icosphere(vec3.fromValues(0, 0, 0), 1, controls.tesselations);
-  icosphere.create();
-  square = new Square(vec3.fromValues(0, 0, 0));
-  square.create();
+  // icosphere = new Icosphere(vec3.fromValues(0, 0, 0), 1, controls.tesselations);
+  // icosphere.create();
+  // square = new Square(vec3.fromValues(0, 0, 0));
+  // square.create();
+  cube = new Cube(vec3.fromValues(0, 0, 0));
+  cube.create();
+}
+
+function switchShader() {
+  useCustom = !useCustom;
 }
 
 function main() {
@@ -39,6 +52,8 @@ function main() {
   const gui = new DAT.GUI();
   gui.add(controls, 'tesselations', 0, 8).step(1);
   gui.add(controls, 'Load Scene');
+  gui.addColor(controls, 'Color');
+  gui.add(controls, 'Switch Shader');
 
   // get canvas and webgl context
   const canvas = <HTMLCanvasElement> document.getElementById('canvas');
@@ -64,8 +79,15 @@ function main() {
     new Shader(gl.FRAGMENT_SHADER, require('./shaders/lambert-frag.glsl')),
   ]);
 
+  const custom = new ShaderProgram([
+    new Shader(gl.VERTEX_SHADER, require('./shaders/custom-vert.glsl')),
+    new Shader(gl.FRAGMENT_SHADER, require('./shaders/custom-frag.glsl'))
+  ]);
+
   // This function will be called every frame
   function tick() {
+    custom.incrementTime();
+
     camera.update();
     stats.begin();
     gl.viewport(0, 0, window.innerWidth, window.innerHeight);
@@ -76,10 +98,26 @@ function main() {
       icosphere = new Icosphere(vec3.fromValues(0, 0, 0), 1, prevTesselations);
       icosphere.create();
     }
-    renderer.render(camera, lambert, [
-      icosphere,
-      // square,
-    ]);
+    if (controls.Color != prevColor)
+    {
+      prevColor = controls.Color;
+      lambert.setGeometryColor(vec4.fromValues(prevColor[0] / 256, prevColor[1] / 256, prevColor[2] / 256, prevColor[3]));
+    }
+    if (useCustom)
+    {
+      renderer.render(camera, custom, [
+        cube
+      ]);
+    } 
+    else
+    {
+      // lambert.setGeometryColor(vec4.fromValues(prevColor[0] / 256, prevColor[1] / 256, prevColor[2] / 256, prevColor[3]));
+      renderer.render(camera, lambert, [
+        // icosphere,
+        // square,
+        cube
+      ]);
+    }
     stats.end();
 
     // Tell the browser to call `tick` again whenever it renders a new frame

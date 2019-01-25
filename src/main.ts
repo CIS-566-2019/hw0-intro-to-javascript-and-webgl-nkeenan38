@@ -101,22 +101,20 @@ function main() {
     if (controls.Color != prevColor)
     {
       prevColor = controls.Color;
-      lambert.setGeometryColor(vec4.fromValues(prevColor[0] / 256, prevColor[1] / 256, prevColor[2] / 256, prevColor[3]));
     }
     if (useCustom)
     {
       renderer.render(camera, custom, [
         cube
-      ]);
+      ], vec4.fromValues(prevColor[0] / 256, prevColor[1] / 256, prevColor[2] / 256, prevColor[3]));
     } 
     else
     {
-      // lambert.setGeometryColor(vec4.fromValues(prevColor[0] / 256, prevColor[1] / 256, prevColor[2] / 256, prevColor[3]));
       renderer.render(camera, lambert, [
         // icosphere,
         // square,
         cube
-      ]);
+      ], vec4.fromValues(prevColor[0] / 256, prevColor[1] / 256, prevColor[2] / 256, prevColor[3]));
     }
     stats.end();
 
